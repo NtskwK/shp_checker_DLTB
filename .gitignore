@@ -1,0 +1,10 @@
+install/
+tmp/
+shp_check2.zip
+deps/
+logs/
+
+*.pyc
+*.zip
+*.7z
+*.rar
