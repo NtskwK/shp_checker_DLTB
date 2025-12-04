@@ -8,3 +8,4 @@ logs/
 *.zip
 *.7z
 *.rar
+.venv

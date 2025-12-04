@@ -13,12 +13,27 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+install_dir:=install
+python_version:=3.12.9
+tmp_dir:=tmp
 
-pkg-freeze:
+all: packup
+
+check-uv:
+	pip install uv
+
+packup: check-uv
+# 	clean dir 
+	cmd /c rmdir /s /q $(install_dir)
+
+# 	download python embed
+	python download_python.py --install_path=$(install_dir) --is_embed=true --version=$(python_version) --tmp_dir=$(tmp_dir)
+
+# 	compile requirements.txt
 	uv pip compile --output-file=requirements.txt pyproject.toml
-
-packup-whl: pkg-freeze
-	uv run python download_deps.py
-
-packup: packup-whl
-	python install.py
+# 	install packages
+	uv pip install -r .\requirements.txt --target .\$(install_dir)\python\Lib
+# 	copy files
+	cp -p ./tools/start.bat ./$(install_dir)/start.bat
+	cp -r ./src ./$(install_dir)/src
+	cp -p ./LICENSE ./$(install_dir)/LICENSE

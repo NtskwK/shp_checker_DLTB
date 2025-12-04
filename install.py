@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from datetime import datetime
 from pathlib import Path
 import shutil
 from ssl import SSLError
@@ -22,6 +23,8 @@ from zipfile import ZipFile
 import requests
 from tqdm import tqdm
 import zipfile
+import hashlib
+import json
 
 sys.stdout.reconfigure(encoding="utf-8")  # type: ignore
 
@@ -30,7 +33,7 @@ tmp_path = Path("./tmp")
 python_dir = install_path / "python"
 mirror = "https://mirrors.ustc.edu.cn/pypi/simple"
 
-shutil.rmtree(install_path, ignore_errors=True)
+shutil.rmtree(install_path / "src", ignore_errors=True)
 
 Path(install_path).mkdir(parents=True, exist_ok=True)
 Path(tmp_path).mkdir(parents=True, exist_ok=True)
@@ -131,18 +134,99 @@ def install_dependencies():
 
 
 def compress_files():
-    zipfile_path = Path("./shp-check.zip")
+    now = datetime.now()
+    fname = f"shp-check-{now.strftime('%Y%m%d_%H%M%S')}.zip"
+    print(f"开始压缩文件: {fname}")
+    zipfile_path = Path("./" + fname)
     with ZipFile(zipfile_path, "w", zipfile.ZIP_LZMA) as zipf:
         for files in Path(install_path).rglob("*"):
             zipf.write(
                 files,
                 files.relative_to(install_path.parent),
             )
+
     print(f"✅ 打包完成：{zipfile_path}")
+
+
+def get_file_md5(fname):
+    if not Path(fname).exists():
+        return ""
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def get_dir_md5(dir_path):
+    if not Path(dir_path).exists():
+        return ""
+    hash_md5 = hashlib.md5()
+    # Sort to ensure consistent order
+    for path in sorted(Path(dir_path).rglob("*")):
+        if path.is_file():
+            # Hash the relative path to detect file moves/renames
+            try:
+                rel_path = path.relative_to(dir_path)
+                hash_md5.update(str(rel_path).encode())
+                with open(path, "rb") as f:
+                    for chunk in iter(lambda: f.read(4096), b""):
+                        hash_md5.update(chunk)
+            except (ValueError, OSError):
+                continue
+    return hash_md5.hexdigest()
+
+
+STATE_FILE = install_path / "install_state.json"
+
+
+def load_state():
+    if STATE_FILE.exists():
+        try:
+            with open(STATE_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+
+def save_state(state):
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f, indent=4)
 
 
 if __name__ == "__main__":
     copy_files()
-    install_python_embed()
-    install_dependencies()
+
+    print("Checking installation state...")
+    current_req_hash = get_file_md5("requirements.txt")
+    current_deps_hash = get_dir_md5("deps")
+    current_python_hash = get_dir_md5(python_dir)
+
+    state = load_state()
+
+    # Check if we can skip installation
+    # We need to ensure python_dir exists and is not empty (hash not empty)
+    if (
+        current_python_hash
+        and state.get("requirements_hash") == current_req_hash
+        and state.get("deps_hash") == current_deps_hash
+        and state.get("python_hash") == current_python_hash
+    ):
+        print(
+            "Dependencies and Python environment are up to date. Skipping installation."
+        )
+    else:
+        install_python_embed()
+        install_dependencies()
+
+        # Update state
+        print("Updating installation state...")
+        new_state = {
+            "requirements_hash": get_file_md5("requirements.txt"),
+            "deps_hash": get_dir_md5("deps"),
+            "python_hash": get_dir_md5(python_dir),
+        }
+        save_state(new_state)
+
     compress_files()
