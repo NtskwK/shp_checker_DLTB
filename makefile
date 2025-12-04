@@ -22,6 +22,10 @@ all: packup
 check-uv:
 	pip install uv
 
+configure: check-uv
+	rm -rf .venv
+	uv sync
+
 packup: check-uv
 # 	clean dir 
 	cmd /c rmdir /s /q $(install_dir)
@@ -37,3 +41,4 @@ packup: check-uv
 	cp -p ./tools/start.bat ./$(install_dir)/start.bat
 	cp -r ./src ./$(install_dir)/src
 	cp -p ./LICENSE ./$(install_dir)/LICENSE
+	zip -r $(install_dir).zip $(install_dir)
