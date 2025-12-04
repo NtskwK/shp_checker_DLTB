@@ -16,6 +16,14 @@
 install_dir:=install
 python_version:=3.12.9
 tmp_dir:=tmp
+app_name:=AppTemplate
+
+
+ifeq ($(OS),Windows_NT)
+    TIMESTAMP := $(shell powershell -Command "(Get-Date).ToString('yyyyMMdd_HHmm')")
+else
+    TIMESTAMP := $(shell date +$(TIME_FORMAT))
+endif
 
 all: packup
 
@@ -26,12 +34,12 @@ configure: check-uv
 	rm -rf .venv
 	uv sync
 
-packup: check-uv
-# 	clean dir 
+clean:
 	cmd /c rmdir /s /q $(install_dir)
 
+packup: check-uv
 # 	download python embed
-	python download_python.py --install_path=$(install_dir) --is_embed=true --version=$(python_version) --tmp_dir=$(tmp_dir)
+	python tools/download_python.py --install_path=$(install_dir) --is_embed=true --version=$(python_version) --tmp_dir=$(tmp_dir)
 
 # 	compile requirements.txt
 	uv pip compile --output-file=requirements.txt pyproject.toml
@@ -41,4 +49,5 @@ packup: check-uv
 	cp -p ./tools/start.bat ./$(install_dir)/start.bat
 	cp -r ./src ./$(install_dir)/src
 	cp -p ./LICENSE ./$(install_dir)/LICENSE
-	zip -r $(install_dir).zip $(install_dir)
+	mkdir dist -p
+	cd $(install_dir) && zip -r ../dist/$(app_name)_$(TIMESTAMP).zip ./*
