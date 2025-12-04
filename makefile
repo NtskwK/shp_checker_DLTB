@@ -16,7 +16,7 @@
 install_dir:=install
 python_version:=3.12.9
 tmp_dir:=tmp
-app_name:=AppTemplate
+app_name:=shp_checker2
 
 
 ifeq ($(OS),Windows_NT)
