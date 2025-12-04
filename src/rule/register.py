@@ -137,7 +137,8 @@ def check_rule_old_7(d: GeoSeries):
 def check_rule_old_8(d: GeoSeries):
     return str(d.DLBM_1).startswith("01") or (
         d.ZZSXDM_1 in ["LS", "FLS", "LYFL", "XG", "LLJZ", "WG"]
-        and not is_null(d.ZZSXDM_1)
+        and d.ZZSXDM_1 != " "
+        and (d.ZZSXDM_1 is not None)
     )
 
 
@@ -275,12 +276,12 @@ def check_rule_old_29(d: GeoSeries):
 
 
 def check_rule_old_30(d: GeoSeries):
-    return not is_null(d.KCDLBM_1) and d.KCDLBM_1 != 0
+    return not d.KCDLBM_1 != " " and d.KCDLBM_1 != 0
 
 
 def check_rule_old_31(d: GeoSeries):
-    return d.ZZSXDM_1 != "GCHF" and not is_null(d.ZZSXDM_1)
+    return d.ZZSXDM_1 != "GCHF" and d.ZZSXDM_1 != " "
 
 
 def check_rule_old_32(d: GeoSeries):
-    return not is_null(d.TBXHDM_1)
+    return not d.TBXHDM_1 != " "

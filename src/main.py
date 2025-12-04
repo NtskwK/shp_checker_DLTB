@@ -50,22 +50,44 @@ def main():
 
     merged_gdf = geographical_comparison(new_series, old_series, 0)
 
-    acc = 0
+    # 初始化统计变量
+    rule_pass_count = [0] * len(rule_list)  # 每个规则的通过次数
+    all_acc = 0  # 所有规则都通过的记录数
+    all_err = 0  # 至少有一个规则未通过的记录数
+
     for data in tqdm(merged_gdf.itertuples(), desc="校验数据", total=len(merged_gdf)):
         is_right = True
         for idx, rule in enumerate(rule_list):
             if not rule.checker(data):  # type: ignore
                 logger.error(
-                    f"更新后标识码：{data.BSM_1}， 规则编号：{idx + 1}，校验失败"
+                    f"更新后标识码：{data.BSM_1}， 规则：{rule.name}，校验失败"
                 )
                 is_right = False
+            else:
+                rule_pass_count[idx] += 1
 
-        acc += int(is_right)
+        if is_right:
+            all_acc += 1
+        else:
+            all_err += 1
 
-    logger.info(f"校验通过的记录数：{acc} / {len(merged_gdf)}")
     # 打印校验规则
-    for idx, rule in enumerate(rule_list):
-        logger.info(f"\n规则：{rule.name}，规则描述：\n{rule.description}")
+    for rule in rule_list:
+        acc = rule_pass_count[idx]
+        logger.info(
+            f"\n规则：{rule.name}，规则描述：{rule.description}"
+        )
+        rule.acc = acc
+
+    logger.info(f"校验通过的记录数：{all_acc} / {len(merged_gdf)}")
+    logger.warning(f"不通过的记录数：{all_err} / {len(merged_gdf)}")
+
+    rule_list.sort(key="acc")
+    logger.info("错误较多的规则")
+    for rule in rule_list[:5]:
+        logger.info(
+            f"规则：{rule.name}，错误率：{len(merged_gdf) - rule.acc} / {len(merged_gdf)}"
+        )
 
     while True:
         input("检查已结束，请打开logs文件夹查看最新的检查报告...")
