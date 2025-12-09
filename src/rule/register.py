@@ -19,6 +19,9 @@ from util import is_null
 
 
 def check_rule_1(d: GeoSeries):
+    if d.DLBM == d.DLBM_1:
+        return True
+
     if (
         d.DLBM
         in [
@@ -37,7 +40,8 @@ def check_rule_1(d: GeoSeries):
     ) and (
         d.DLBM_1 in ["0201", "0202", "0203", "0204", "0301", "0302", "0305", "0307"]
     ):
-        return not is_null(d.BZ_1)
+        if is_null(d.BZ_1):
+            return False
     return True
 
 
@@ -61,19 +65,23 @@ def check_rule_3(d: GeoSeries):
         "0307",
         "0404",
     ]:
-        return not is_null(d.ZZSXDM_1)
+        if is_null(d.ZZSXDM_1):
+            return False
     return True
 
 
 def check_rule_4(d: GeoSeries):
-    return not is_null(d.DLBM_1)
+    if is_null(d.DLBM_1):
+        return False
+    return True
 
 
 def check_rule_5(d: GeoSeries):
     if (d.DLBM not in ["0101", "0102", "0103"]) and (
         d.DLBM_1 in ["0101", "0102", "0103"]
     ):
-        return not is_null(d.BZ_1)
+        if is_null(d.BZ_1):
+            return False
     return True
 
 
@@ -85,9 +93,10 @@ def check_rule_6(d: GeoSeries):
 
 def check_rule_7(d: GeoSeries):
     if d.DLBM_1 in ["0101", "0102", "0103"]:
-        if not d.BZ_1 == "2025年未种植":
+        if d.BZ_1 != "2025未种植":
             return False
-        return d.ZZSXDM_1 != "WG"
+        if d.ZZSXDM_1 != "WG":
+            return False
     return True
 
 
@@ -135,11 +144,14 @@ def check_rule_old_7(d: GeoSeries):
 
 
 def check_rule_old_8(d: GeoSeries):
-    return str(d.DLBM_1).startswith("01") or (
-        d.ZZSXDM_1 in ["LS", "FLS", "LYFL", "XG", "LLJZ", "WG"]
-        and d.ZZSXDM_1 != " "
-        and (d.ZZSXDM_1 is not None)
-    )
+    if d.DLBM_1.startswith("01"):
+        if not (
+            d.ZZSXDM_1
+            in ["FLS", "GCHF", "JKHF", "LLJZ", "JZTZ", "ZZYTLSTZ", "LYFL", "LS", "WG"]
+        ):
+            return False
+
+    return True
 
 
 def check_rule_old_9(d: GeoSeries):
@@ -151,10 +163,20 @@ def check_rule_old_10(d: GeoSeries):
 
 
 def check_rule_old_11(d: GeoSeries):
-    return d.ZZSXDM_1 == "GCHF" or (
-        str(d.DLBM_1).startswith(("02", "0301", "0302", "0307"))
-        or d.DLBM_1 in ["0305", "0403K", "0404", "1104", "1104K", "1104A"]
-    )
+    if d.ZZSXDM_1 == "GCHF":
+        if str(d.DLBM_1).startswith(("02", "0301", "0302", "0307")) or d.DLBM_1 in [
+            "0305",
+            "0403K",
+            "0404",
+            "1104",
+            "1104K",
+            "1104A",
+        ]:
+            return True
+        else:
+            return False
+
+    return True
 
 
 def check_rule_old_12(d: GeoSeries):
@@ -276,12 +298,12 @@ def check_rule_old_29(d: GeoSeries):
 
 
 def check_rule_old_30(d: GeoSeries):
-    return not d.KCDLBM_1 != " " and d.KCDLBM_1 != 0
+    return d.KCDLBM_1 != " " and d.KCDLBM_1 != 0
 
 
 def check_rule_old_31(d: GeoSeries):
-    return d.ZZSXDM_1 != "GCHF" and d.ZZSXDM_1 != " "
+    return True
 
 
 def check_rule_old_32(d: GeoSeries):
-    return not d.TBXHDM_1 != " "
+    return d.TBXHDM_1 != " "
